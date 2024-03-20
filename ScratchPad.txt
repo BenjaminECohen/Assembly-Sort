@@ -1,0 +1,93 @@
+6 2 5 4 8 10
+
+6 2 5	4 8 10
+
+
+
+interval = d3
+
+
+
+size must be known (d0/2 => lsr.l d0)
+
+loop 1:
+interval = size / 2 (lsr)
+break when interval less than or equal to 0
+each iteration interval/2 (lsr)
+
+loop 2:
+t_index = interval
+break when t_index is greater than size
+each iteration t_index increase by 1
+
+save the data at t_index
+h_index gets initialized (because if loop does enact, save temp to same spot)
+
+
+loop 3:
+h_index = t_index
+break if j less than interval AND data at (h_index - interval) less than temp
+each iteration j decrement by interval	
+
+save data from h_index - intveral into h_index
+
+
+outside loop 3 end of loop 2:
+save data from t_index into h_index	
+
+
+*store words in High and Low?
+*d0 holds max size (bytes)
+*d1 holds highest value for a findMax
+*d2 holds current value at index to compare to d1
+*d3 holds current gap size in WORDS
+*d4 holds gap size in BYTES
+*
+*a0 indexer for lower value
+*a1 indexer for higher value
+*a2 holds index for end of data (sorted data start)
+
+
+
+for (int interval =n/2; interval > 0; interval /=2)
+{
+	for (int i = interval; i < n; i++)
+	{
+		int temp = arr[i]
+		int j;
+		
+		for (j = i; j >= interval && arr[j-interval] > temp; j -= interval)
+			arr[j] = arr[j-interval]
+		
+		arr[j] = temp;
+		
+	}
+
+}
+
+
+	
+2118 A00A 0537 |2001| 437D 0355 91D7
+1, 2, 3, 4, 5, 6, 7
+   4,   7,   2,    3,    5,   1,   6 
+
+
+
+
+
+Total byte Size = d0
+saved interval value = d1 (for incrementing)
+
+
+d2 lower index value
+d3 higher index value
+
+value at lower index address stored in d4
+
+Calculation register = d6
+the byte Gap value = d7 (d1*2)
+
+addresses
+a0 = start of data/acts as lower index address
+
+

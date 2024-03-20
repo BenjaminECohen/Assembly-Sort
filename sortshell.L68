@@ -1,0 +1,207 @@
+00001000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.16.01
+Created On: 9/18/2023 10:08:57 AM
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Program Number: IDK Dawg
+00000000                             3  * Written by    : Ben Cohen
+00000000                             4  * Date Created  : Sept 13, 2023
+00000000                             5  * Description   : Sorting a raw data file with shell sort
+00000000                             6  *
+00000000                             7  *-----------------------------------------------------------
+00000000                             8  
+00000000                             9  
+00000000                            10  
+00001000                            11  START   ORG     $1000
+00001000                            12  
+00001000                            13  *store words in High and Low?
+00001000                            14  *Size Bytes = d0
+00001000                            15  *d1 = interval in words
+00001000                            16  *d7 = interval in bytes
+00001000                            17  *
+00001000                            18  *lower index value = d2 (index value)
+00001000                            19  *higher index value = d3 (index value)
+00001000                            20  *
+00001000                            21  *saved lower data = d4
+00001000                            22  *
+00001000                            23  *addresses
+00001000                            24  *a0 = start of iteration
+00001000                            25  *a1 = max address
+00001000                            26  *
+00001000                            27  
+00001000                            28  
+00001000  41F9 000010C4             29          lea     DataToSort,a0                   ;load the address of the data into a0
+00001006  203C 000006A6             30          move.l  #(SortedData-DataToSort), d0    ;set size in bytes to d0
+0000100C  E208                      31          lsr.b   #$01,d0                         ;get size in words to d0
+0000100E  43F9 0000176A             32          lea     sortedData, a1                  ;start of sorted data
+00001014                            33          
+00001014                            34          
+00001014                            35  MoveByteData:
+00001014                            36          
+00001014  32D8                      37          move.w  (a0)+,(a1)+     ;move a0 to a1 and post inc both
+00001016                            38          
+00001016  5380                      39          subi.l  #01,d0          ;decrement d0
+00001018  66FA                      40          BNE     MoveByteData    ;If not zero run loop again    
+0000101A                            41                  
+0000101A                            42  PrepareRegistersForSort:
+0000101A                            43          
+0000101A                            44          
+0000101A  203C 000006A6             45          move.l #(SortedData-DataToSort), d0
+00001020  2200                      46          move.l  d0,d1                           ;move size to interval value register
+00001022  E409                      47          lsr.b   #$02,d1                         ;Divide size by 2 to get size in words, then another 2 for true interval in words
+00001024  2E01                      48          move.l  d1, d7                          ;Move inteval in words to iterating interval holder d7
+00001026                            49          
+00001026  E30F                      50          lsl.b   #$01, d7                        ;Always positive
+00001028                            51          
+00001028  6600 000C                 52          BNE     SetInterval
+0000102C                            53         
+0000102C                            54  
+0000102C                            55  DecrementInterval:        
+0000102C                            56  
+0000102C  E209                      57          lsr.b   #$01,d1                         ;Divide word interval by 2
+0000102E  2E01                      58          move.l  d1,d7                           ;move word interval to byte interval
+00001030  E30F                      59          lsl.b   #$01,d7                         ;d7 shift left to get byte interval (Always even)
+00001032                            60          
+00001032  6700 0034                 61          BEQ     CheckIfListSorted               ;gap size = 0 => Branch outa here the list should be sorted       
+00001036                            62          
+00001036                            63                 
+00001036                            64  SetInterval:
+00001036                            65  
+00001036  41F9 0000176A             66          lea sortedData, a0                      ;needed for next interval             
+0000103C                            67          
+0000103C  4282                      68          clr.l   d2
+0000103E  6700 0004                 69          BEQ     SetLowerIndexVal
+00001042                            70          
+00001042                            71  SetLowerIndexIncrement:
+00001042  5482                      72          add.l   #02,d2        
+00001044                            73          
+00001044                            74  SetLowerIndexVal:
+00001044                            75          
+00001044  2448                      76          move.l  a0,a2
+00001046  D5C7                      77          add.l   d7,a2
+00001048  B3CA                      78          cmp.l   a2,a1                           ;max increment minus current increment
+0000104A  6FE0                      79          BLE     DecrementInterval
+0000104C                            80                
+0000104C  3810                      81          move.w  (a0),d4                         ;save lower interval data to d4       
+0000104E  4283                      82          clr.l   d3
+00001050                            83  
+00001050                            84  SetHigherIndexVal:
+00001050                            85          
+00001050  B870 7000                 86          cmp.w   (a0,d7),d4                      ;Compare lower address minus higher address  L - H = -x if lower is less than high
+00001054  6C00 0006                 87          BGE     Swap                            ;lower index value is greater so swap
+00001058                            88          
+00001058  5488                      89          add.l   #02,a0                          ;increment a0
+0000105A  66E6                      90          BNE     SetLowerIndexIncrement
+0000105C                            91  
+0000105C                            92  
+0000105C                            93  Swap:        
+0000105C                            94          ;value is higher
+0000105C  30B0 7000                 95          move.w  (a0,d7),(a0)                    ;move higher address data into lower address data 
+00001060  3184 7000                 96          move.w  d4,(a0,d7)                      ;move saved lower address data into higher address data
+00001064                            97          
+00001064  5488                      98          add.l   #02,a0                          ;increment a0
+00001066  66DA                      99          BNE     SetLowerIndexIncrement        
+00001068                           100    
+00001068                           101      
+00001068                           102      
+00001068                           103  *Insertion Sort check in case worst case scenario
+00001068                           104  
+00001068                           105  *a0 = iterator
+00001068                           106  *a1 = end of data
+00001068                           107  *d0 = total size of array 
+00001068                           108  *d1 = decrement variable 
+00001068                           109  *d2 = gap size (always 2)
+00001068                           110  *d3 >= 1 if a swap occurs (run iteration again)
+00001068                           111  *d4 = saved lower value
+00001068                           112  *d7 for zero checking and making sure things branches correctly    
+00001068                           113      
+00001068                           114      
+00001068                           115  CheckIfListSorted:      
+00001068                           116  
+00001068  4281                     117          clr.l   d1
+0000106A  4282                     118          clr.l   d2       
+0000106C  4284                     119          clr.l   d4
+0000106E  4287                     120          clr.l   d7
+00001070                           121          
+00001070  2200                     122          move.l  d0,d1
+00001072  7402                     123          move.l  #2,d2
+00001074                           124          
+00001074  41F9 0000176A            125          lea SortedData,a0
+0000107A                           126          
+0000107A  5589                     127          sub.l   #2,a1                           ;max size - 1
+0000107C                           128          
+0000107C                           129          
+0000107C                           130  RestartIteration:
+0000107C                           131  
+0000107C  41F9 0000176A            132          lea     SortedData,a0
+00001082  4283                     133          clr.l   d3
+00001084                           134          
+00001084                           135  FinalSortIteration:        
+00001084                           136          
+00001084  B3C8                     137          cmp.l   a0,a1                           ;If max - 1 is less than or equal to current, go to AreWeDone
+00001086  6F00 002A                138          BLE     AreWeDone
+0000108A                           139          
+0000108A  3810                     140          move.w  (a0),d4                         ;Save lower value to register
+0000108C  B870 2000                141          cmp.w   (a0,d2),d4                      ;Lower Minus Upper if Greater than, swap needed
+00001090  6E00 000C                142          BGT FinalSwap
+00001094                           143          
+00001094  5488                     144          add.l   #02,a0
+00001096  BEBC 00000000            145          cmp.l   #0,d7
+0000109C  67E6                     146          BEQ     FinalSortIteration
+0000109E                           147          
+0000109E                           148          
+0000109E                           149  FinalSwap:
+0000109E                           150          
+0000109E  5283                     151          add.l   #1,d3                           ;swap occurred, so increase d3 so another iteration will run after current
+000010A0  30B0 2000                152          move.w  (a0,d2),(a0)
+000010A4  3184 2000                153          move.w  d4,(a0,d2)
+000010A8  5488                     154          add.l   #02,a0
+000010AA  BEBC 00000000            155          cmp.l   #0,d7
+000010B0  67D2                     156          BEQ     FinalSortIteration  
+000010B2                           157          
+000010B2                           158  AreWeDone:
+000010B2  B6BC 00000000            159          cmp.l   #0,d3
+000010B8  66C2                     160          BNE     RestartIteration
+000010BA                           161  
+000010BA                           162          
+000010BA                           163  ListSorted: *Huzzah!       
+000010BA                           164  
+000010BA                           165          
+000010BA                           166  
+000010BA                           167         
+000010BA  1038 0009                168          move.b  $9,d0
+000010BE  4E4F                     169          TRAP #15
+000010C0                           170          
+000010C0  4E72 2000                171          STOP #$2000
+000010C4                           172       
+000010C4                           173  
+000010C4                           174  DataToSort      INCBIN "asmdata-16.txt"
+0000176A                           175  
+0000176A                           176  
+0000176A                           177  SortedData      ds.b  (SortedData-DataToSort)
+00001E10                           178          END     START
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+AREWEDONE           10B2
+CHECKIFLISTSORTED   1068
+DATATOSORT          10C4
+DECREMENTINTERVAL   102C
+FINALSORTITERATION  1084
+FINALSWAP           109E
+LISTSORTED          10BA
+MOVEBYTEDATA        1014
+PREPAREREGISTERSFORSORT  101A
+RESTARTITERATION    107C
+SETHIGHERINDEXVAL   1050
+SETINTERVAL         1036
+SETLOWERINDEXINCREMENT  1042
+SETLOWERINDEXVAL    1044
+SORTEDDATA          176A
+START               1000
+SWAP                105C
